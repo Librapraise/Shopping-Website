@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "Shopping-Website",
+			"path": ".."
+		},
+		{
+			"name": "public",
+			"path": "../../../../Downloads/next-ecommerce-completed/next-ecommerce-completed/public"
+		}
+	],
+	"settings": {}
+}

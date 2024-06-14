@@ -1,0 +1,77 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import CartModal from "./cartModal";
+
+
+
+const NavbarIcons = () => {
+    const router = useRouter();
+
+    const [ isProfileOpen, setProfileOpen ] = useState(false);
+    const [ isCartOpen, setCartOpen ] = useState(false);
+
+
+    const isLoggedIn = false;
+
+    const handleProfile = () => {
+
+        if(isLoggedIn) {
+            router.push("/login");
+        } else {
+            setProfileOpen(!isProfileOpen);
+        }
+    }
+
+    return (
+        <div className="flex gap-4 items-center xl:gap-6 relative">
+            <Image 
+                src="/profile.png" 
+                alt="" 
+                width={22} 
+                height={22} 
+                className="cursor-pointer"
+                 onClick={handleProfile}
+            />
+            { isProfileOpen && (
+                <div className="absolute px-4 py-2 rounded-md top-10 left-0 text-sm bg-white text-sm shadow-[0_3px_10px_rgb(0,0,0,0.2)] z-20">
+                    <Link href="/" className="">Profile</Link>
+                    <div className="mt-2 cursor-pointer">Logout</div>
+                </div>
+            )}
+
+
+            <Image 
+                src="/notification.png" 
+                alt="" 
+                width={22} 
+                height={22} 
+                className="cursor-pointer"
+
+            />
+
+            <div 
+                className=" relative cursor-pointer"
+                onClick={() => setCartOpen(!isCartOpen)}
+            >
+                <Image 
+                    src="/cart.png" 
+                    alt="" 
+                    width={22} 
+                    height={22} 
+                    className=""
+                />
+                <div className="absolute rounded-full flex items-center justify-center text-sm bg-lama text-white -top-3 -right-3 w-6 h-6">2</div>
+            </div>
+            { isCartOpen && (
+                <CartModal />   
+            )}
+
+        </div>
+    );
+};
+
+export default NavbarIcons;
