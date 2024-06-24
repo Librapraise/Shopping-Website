@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Cookies from "js-cookie";
+import { useRouter, usePathname } from "next/navigation";
+import { useWixContext } from "../hook/useWixClient";
 
 
 const navlinks = [
@@ -28,17 +31,29 @@ const navlinks = [
   },
   {
     path: "/",
-    title: "Logout",
-  },
-  {
-    path: "/",
     title: `Cart(1)`,
   },
 ]
 
 const NavMenu = () => {
 
+    const wixClient = useWixContext();
+
+    const pathName = usePathname();
+    const router = useRouter();
+
     const [open, setOpen] = useState(false);
+    const [ isLoading, setIsLoading ] = useState(false);
+
+    //logged out
+    const handleLogOut = async () => {
+      setIsLoading(true);
+      Cookies.remove("refreshToken");
+      const { logoutUrl } = await wixClient.auth.logout(window.location.href);
+      setIsLoading(false);
+      setOpen(!open);
+      router.push(logoutUrl);
+    }
 
     return (
         <div className="h-full flex items-center justify-between md:hidden">
@@ -58,6 +73,11 @@ const NavMenu = () => {
                       {links.title}
                     </Link>
                   ))}
+                    <div
+                      onClick={handleLogOut}
+                    >
+                      {isLoading ? "Logging out" : "Logout"}
+                    </div>
                 </div>
             )
           }

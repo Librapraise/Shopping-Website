@@ -2,11 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useWixContext } from "../hook/useWixClient";
 
 
 const CartModal = () => {
 
     const cartItems = true;
+
+    const wixClient = useWixContext();
+
+    //const response = await wixClient.currentCart.addToCurrentCart();
+
 
     return (
         <div className="relative">

@@ -43,16 +43,21 @@ const Add = ({ productId, variantId, stockNumber }) => {
                             +
                         </button>
                     </div>
-                    <div className="text-xs"
-                    >
-                        Only <span className="text-orange-500">{stockNumber} items</span> left <br/> {"Don't "}Miss it
-                    </div>
+
+                    { stockNumber < 1 ? (
+                        <div className="text-xs">Product is out of stock</div>
+                    ) : (
+                        <div className="text-xs">
+                            Only <span className="text-orange-500">{stockNumber} items</span> left <br/> {"Don't "}Miss it
+                        </div>
+                    )}
                 </div>
 
                 {/*right */}
                 <button 
                     className="w-36 text-sm rounded-3xl ring-1 ring-lama text-lama px-4 py-2 hover:bg-lama hover:text-white disabled:bg-pink-200 disabled:text-white disabled:cursor-not-allowed disabled:ring-none"
                     disabled={ quantity > stockNumber }
+                    onClick={addItem}
                     >
                     Add to cart
                 </button>

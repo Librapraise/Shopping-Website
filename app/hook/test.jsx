@@ -1,101 +1,228 @@
-import { wixClientServer } from "@/lib/wixClientServer";
-import { products } from "@wix/stores";
-import Image from "next/image";
-import Link from "next/link";
-import DOMPurify from "isomorphic-dompurify";
-import Pagination from "./Pagination";
+"use client";
 
-const PRODUCT_PER_PAGE = 8;
+import { useWixClient } from "@/hooks/useWixClient";
+import { LoginState } from "@wix/sdk";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import { useState } from "react";
 
-const ProductList = async ({ categoryId, limit, searchParams }) => {
-  const wixClient = await wixClientServer();
+const MODE = {
+  LOGIN: "LOGIN",
+  REGISTER: "REGISTER",
+  RESET_PASSWORD: "RESET_PASSWORD",
+  EMAIL_VERIFICATION: "EMAIL_VERIFICATION",
+};
 
-  const productQuery = wixClient.products
-   .queryProducts()
-   .startsWith("name", searchParams?.name || "")
-   .eq("collectionIds", categoryId)
-   .hasSome(
-      "productType",
-      searchParams?.type? [searchParams.type] : ["physical", "digital"]
-    )
-   .gt("priceData.price", searchParams?.min || 0)
-   .lt("priceData.price", searchParams?.max || 999999)
-   .limit(limit || PRODUCT_PER_PAGE)
-   .skip(
-      searchParams?.page
-       ? parseInt(searchParams.page) * (limit || PRODUCT_PER_PAGE)
-        : 0
-    );
+const LoginPage = () => {
+  const wixClient = useWixClient();
+  const router = useRouter();
 
-  if (searchParams?.sort) {
-    const [sortType, sortBy] = searchParams.sort.split(" ");
+  const isLoggedIn = wixClient.auth.loggedIn();
 
-    if (sortType === "asc") {
-      productQuery.ascending(sortBy);
-    }
-    if (sortType === "desc") {
-      productQuery.descending(sortBy);
-    }
+  if (isLoggedIn) {
+    router.push("/");
   }
 
-  const res = await productQuery.find();
+  const [mode, setMode] = useState(MODE.LOGIN);
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailCode, setEmailCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  const formTitle = {
+    [MODE.LOGIN]: "Log in",
+    [MODE.REGISTER]: "Register",
+    [MODE.RESET_PASSWORD]: "Reset Your Password",
+    [MODE.EMAIL_VERIFICATION]: "Verify Your Email",
+  }[mode];
+
+  const buttonTitle = {
+    [MODE.LOGIN]: "Login",
+    [MODE.REGISTER]: "Register",
+    [MODE.RESET_PASSWORD]: "Reset",
+    [MODE.EMAIL_VERIFICATION]: "Verify",
+  }[mode];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      let response;
+
+      switch (mode) {
+        case MODE.LOGIN:
+          response = await wixClient.auth.login({
+            email,
+            password,
+          });
+          break;
+        case MODE.REGISTER:
+          response = await wixClient.auth.register({
+            email,
+            password,
+            profile: { nickname: username },
+          });
+          break;
+        case MODE.RESET_PASSWORD:
+          response = await wixClient.auth.sendPasswordResetEmail(
+            email,
+            window.location.href
+          );
+          setMessage("Password reset email sent. Please check your e-mail.");
+          break;
+        case MODE.EMAIL_VERIFICATION:
+          response = await wixClient.auth.processVerification({
+            verificationCode: emailCode,
+          });
+          break;
+        default:
+          break;
+      }
+
+      switch (response?.loginState) {
+        case LoginState.SUCCESS:
+          setMessage("Successful! You are being redirected.");
+          const tokens = await wixClient.auth.getMemberTokensForDirectLogin(
+            response.data.sessionToken
+          );
+
+          Cookies.set("refreshToken", JSON.stringify(tokens.refreshToken), {
+            expires: 2,
+          });
+          wixClient.auth.setTokens(tokens);
+          router.push("/");
+          break;
+        case LoginState.FAILURE:
+          if (
+            response.errorCode === "invalidEmail" ||
+            response.errorCode === "invalidPassword"
+          ) {
+            setError("Invalid email or password!");
+          } else if (response.errorCode === "emailAlreadyExists") {
+            setError("Email already exists!");
+          } else if (response.errorCode === "resetPassword") {
+            setError("You need to reset your password!");
+          } else {
+            setError("Something went wrong!");
+          }
+          break;
+        case LoginState.EMAIL_VERIFICATION_REQUIRED:
+          setMode(MODE.EMAIL_VERIFICATION);
+          break;
+        case LoginState.OWNER_APPROVAL_REQUIRED:
+          setMessage("Your account is pending approval");
+          break;
+        default:
+          break;
+      }
+    } catch (err) {
+      console.log(err);
+      setError("Something went wrong!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="mt-12 flex gap-x-8 gap-y-16 justify-between flex-wrap">
-      {res.items.map((product) => (
-        <Link
-          href={"/" + product.slug}
-          className="w-full flex flex-col gap-4 sm:w-[45%] lg:w-[22%]"
-          key={product._id}
-        >
-          <div className="relative w-full h-80">
-            <Image
-              src={product.media?.mainMedia?.image?.url || "/product.png"}
-              alt=""
-              fill
-              sizes="25vw"
-              className="absolute object-cover rounded-md z-10 hover:opacity-0 transition-opacity easy duration-500"
+    <div className="h-[calc(100vh-80px)] px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 flex items-center justify-center">
+      <form className="flex flex-col gap-8" onSubmit={handleSubmit}>
+        <h1 className="text-2xl font-semibold">{formTitle}</h1>
+        {mode === MODE.REGISTER && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-gray-700">Username</label>
+            <input
+              type="text"
+              name="username"
+              placeholder="john"
+              className="ring-2 ring-gray-300 rounded-md p-4"
+              onChange={(e) => setUsername(e.target.value)}
             />
-            {product.media?.items && (
-              <Image
-                src={product.media?.items[1]?.image?.url || "/product.png"}
-                alt=""
-                fill
-                sizes="25vw"
-                className="absolute object-cover rounded-md"
-              />
-            )}
           </div>
-          <div className="flex justify-between">
-            <span className="font-medium">{product.name}</span>
-            <span className="font-semibold">${product.price?.price}</span>
+        )}
+        {mode !== MODE.EMAIL_VERIFICATION ? (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-gray-700">E-mail</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="john@gmail.com"
+              className="ring-2 ring-gray-300 rounded-md p-4"
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
-          {product.additionalInfoSections && (
-            <div
-              className="text-sm text-gray-500"
-              dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(
-                  product.additionalInfoSections.find(
-                    (section) => section.title === "shortDesc"
-                  )?.description || ""
-                ),
-              }}
-            ></div>
-          )}
-          <button className="rounded-2xl ring-1 ring-lama text-lama w-max py-2 px-4 text-xs hover:bg-lama hover:text-white">
-            Add to Cart
-          </button>
-        </Link>
-      ))}
-      {searchParams?.cat || searchParams?.name? (
-        <Pagination
-          currentPage={res.currentPage || 0}
-          hasPrev={res.hasPrev()}
-          hasNext={res.hasNext()}
-        />
-      ) : null}
+        ) : (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-gray-700">Verification Code</label>
+            <input
+              type="text"
+              name="emailCode"
+              placeholder="Code"
+              className="ring-2 ring-gray-300 rounded-md p-4"
+              onChange={(e) => setEmailCode(e.target.value)}
+            />
+          </div>
+        )}
+        {(mode === MODE.LOGIN || mode === MODE.REGISTER) && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-gray-700">Password</label>
+            <input
+              type="password"
+              name="password"
+              placeholder="Enter your password"
+              className="ring-2 ring-gray-300 rounded-md p-4"
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        )}
+        {mode === MODE.LOGIN && (
+          <div
+            className="text-sm underline cursor-pointer"
+            onClick={() => setMode(MODE.RESET_PASSWORD)}
+          >
+            Forgot Password?
+          </div>
+        )}
+        <button
+          className="bg-lama text-white p-2 rounded-md disabled:bg-pink-200 disabled:cursor-not-allowed"
+          disabled={isLoading}
+        >
+          {isLoading ? "Loading..." : buttonTitle}
+        </button>
+        {error && <div className="text-red-600">{error}</div>}
+        {mode === MODE.LOGIN && (
+          <div
+            className="text-sm underline cursor-pointer"
+            onClick={() => setMode(MODE.REGISTER)}
+          >
+            {"Don't"} have an account?
+          </div>
+        )}
+        {mode === MODE.REGISTER && (
+          <div
+            className="text-sm underline cursor-pointer"
+            onClick={() => setMode(MODE.LOGIN)}
+          >
+            Have an account?
+          </div>
+        )}
+        {mode === MODE.RESET_PASSWORD && (
+          <div
+            className="text-sm underline cursor-pointer"
+            onClick={() => setMode(MODE.LOGIN)}
+          >
+            Go back to Login
+          </div>
+        )}
+        {message && <div className="text-green-600 text-sm">{message}</div>}
+      </form>
     </div>
   );
 };
 
-export default ProductList;
+export default LoginPage;
