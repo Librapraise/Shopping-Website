@@ -19,9 +19,32 @@ const CartModal = () => {
     //     getCart(wixClient);
     // }, [wixClient, getCart]);
 
-    console.log(cart);
-
     //const response = await wixClient.currentCart.addToCurrentCart();
+
+    //checkout
+    const handleCheckout = async () => {
+        try {
+          const checkout =
+            await wixClient.currentCart.createCheckoutFromCurrentCart({
+              channelType: currentCart.ChannelType.WEB,
+            });
+    
+          const { redirectSession } =
+            await wixClient.redirects.createRedirectSession({
+              ecomCheckout: { checkoutId: checkout.checkoutId },
+              callbacks: {
+                postFlowUrl: window.location.origin,
+                thankYouPageUrl: `${window.location.origin}/success`,
+              },
+            });
+    
+          if (redirectSession?.fullUrl) {
+            window.location.href = redirectSession.fullUrl;
+          }
+        } catch (err) {
+          console.log(err);
+        }
+      };
 
 
     return (
@@ -92,6 +115,7 @@ const CartModal = () => {
                             </button>
                             <button className="rounded-md px-4 py-3 bg-black text-white disabled:cursor-not-allowed disabled:opacity-75"
                             disabled={isLoading}
+                            onClick={handleCheckout}
                             >
                                 Checkout
                             </button>
