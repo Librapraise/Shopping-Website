@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useWixClient } from "../hook/useWixClient";
+import { useWixContext } from "../hook/useWixClient";
 import { useCartStore } from "../hook/useCartStore";
 
 
@@ -24,7 +24,7 @@ const Add = ({ productId, variantId, stockNumber }) => {
 
     }
 
-    const wixClient = useWixClient()
+    const wixClient = useWixContext();
     const { addItem, isLoading } = useCartStore();
 
     return (
@@ -60,7 +60,7 @@ const Add = ({ productId, variantId, stockNumber }) => {
                 {/*right */}
                 <button 
                     className="w-36 text-sm rounded-3xl ring-1 ring-lama text-lama px-4 py-2 hover:bg-lama hover:text-white disabled:bg-pink-200 disabled:text-white disabled:cursor-not-allowed disabled:ring-none"
-                    disabled={ quantity > stockNumber }
+                    disabled={isLoading}
                     onClick={() => addItem(wixClient, productId, variantId, quantity)}
                     >
                     Add to cart
