@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import CartModal from "./cartModal";
 import { useWixContext } from "../hook/useWixClient";
 import Cookies from "js-cookie";
+import { useCartStore } from "../hook/useCartStore";
 //import { useWixContext } from "../hook/useWixClient";
 
 
@@ -45,6 +46,13 @@ const NavbarIcons = () => {
         router.push(logoutUrl);
     }
     
+
+    const { cart, counter, getCart } = useCartStore();
+
+    useEffect(() => {
+        getCart(wixClient);
+    }, [wixClient, getCart]);
+
 //   //AUTH WITH WIX-MANAGED AUTH
 
 //   const login = async () => {
@@ -103,7 +111,9 @@ const NavbarIcons = () => {
                     height={22} 
                     className=""
                 />
-                <div className="absolute rounded-full flex items-center justify-center text-sm bg-lama text-white -top-3 -right-3 w-6 h-6">2</div>
+                <div className="absolute rounded-full flex items-center justify-center text-sm bg-lama text-white -top-3 -right-3 w-6 h-6">
+                    {counter}
+                </div>
             </div>
             { isCartOpen && (
                 <CartModal />   
