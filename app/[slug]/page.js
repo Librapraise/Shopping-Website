@@ -5,6 +5,9 @@ import Add from "../components/add";
 import CustomizeProducts from "../components/customizeProducts";
 import { wixClientServer } from "../lib/wixClientServer";
 import ProductImages from "../components/productImages";
+import Reviews from "../components/Reviews";
+
+
 
 const SinglePage = async ({ params: { slug } }) => {
   const wixClient = await wixClientServer();
@@ -76,9 +79,9 @@ const SinglePage = async ({ params: { slug } }) => {
 
         {/* Reviews Section */}
         <h1 className="text-2xl">User Reviews</h1>
-        {/* <Suspense fallback="Loading...">
+        <Suspense fallback="Loading...">
           <Reviews productId={product._id} />
-        </Suspense> */}
+        </Suspense>
       </div>
     </div>
   );
