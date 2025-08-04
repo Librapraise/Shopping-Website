@@ -1,12 +1,10 @@
 "use client";
-
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Cookies from "js-cookie";
 import { useRouter, usePathname } from "next/navigation";
 import { useWixContext } from "../hook/useWixClient";
-
 
 const navlinks = [
   {
@@ -36,15 +34,12 @@ const navlinks = [
 ]
 
 const NavMenu = () => {
-
     const wixClient = useWixContext();
-
     const pathName = usePathname();
     const router = useRouter();
-
     const [open, setOpen] = useState(false);
     const [ isLoading, setIsLoading ] = useState(false);
-
+    
     //logged out
     const handleLogOut = async () => {
       setIsLoading(true);
@@ -54,19 +49,19 @@ const NavMenu = () => {
       setOpen(!open);
       router.push(logoutUrl);
     }
-
+    
     return (
         <div className="h-full flex items-center justify-between md:hidden">
           <Link href="/">
             <div className="text-2xl tracking-wide font-bold">LibraShop</div>
           </Link>
-
           <Image src="/menu.png" alt="nav" width={28} height={28} className="cursor-pointer" onClick={() => setOpen(!open)}/>
           {
             open && (
                 <div className="absolute bg-black left-0 top-20 w-full h-[calc(100vh-80px)] flex flex-col items-center justify-center text-white text-xl z-50 gap-8">
-                  {navlinks.map((links) => (
+                  {navlinks.map((links, index) => (
                     <Link 
+                      key={index}
                       href={links.path} 
                       onClick={() => setOpen(!open)}
                     >
